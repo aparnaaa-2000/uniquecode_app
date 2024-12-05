@@ -1,19 +1,20 @@
-import { connect, Schema, model } from "mongoose";
-connect('mongodb+srv://aparnarajendran:aparna@cluster0.2jjfvoh.mongodb.net/formData?retryWrites=true&w=majority')
+const mongoose = require("mongoose");
 
 
 
 
-const DataSchema = new Schema({
-    category: String,
-    subCategory: String,
-    half: String,
-    year: String,
-    itemCode: String,
-    size: String,
-    quantity: Number,
-    uniqueCode: { type: String, unique: true },
-  });
+const dataSchema = new mongoose.Schema({
+  branchName: { type: String, required: true },
+  category: { type: String, required: true },
+  subCategory: { type: String, required: true },
+  half: { type: String, required: true },
+  halfValue: { type: Number, required: true },
+  year: { type: Number, required: true },
+  itemCode: { type: String, required: true },
+  size: { type: String, required: true },
+  quantity: { type: Number, required: true },
+  uniqueCode: { type: String, required: true },
+})
 
-  const DataModel = model("Data", DataSchema);
-  export default DataModel;
+module.exports = mongoose.model("datas", dataSchema);
+  

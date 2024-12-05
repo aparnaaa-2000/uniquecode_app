@@ -1,76 +1,40 @@
+
 const express = require("express");
-const mongoose = require("mongoose");
-const bodyParser = require("body-parser");
-const crypto = require("crypto");
+const cors = require("cors");
+require('./db/connect')
+const generateUniqueCode = require('./utils/codeGenerator')
+
+const User = require('./models/User')
+const Data = require('./models/formData')
 
 const app = express();
-app.use(bodyParser.json());
 
 
-const cors = require("cors");
+app.use(express.json());
 app.use(cors());
 
 
-// MongoDB Connection
-// mongoose.connect("mongodb+srv://aparnarajendran:aparna@cluster0.2jjfvoh.mongodb.net/newproject?retryWrites=true&w=majority", {
-//   useNewUrlParser: true,
-//   useUnifiedTopology: true,
-//   useCreateIndex: true,
-// });
-// const db = mongoose.connection;
-// db.on("error", console.error.bind(console, "connection error:"));
-// db.once("open", () => {
-//   console.log("MongoDB connected");
-// });
+app.post('/', async(req,res)=>{
+  let user = new User (req.body);
+  let result = await user.save();
+  res.send(result);
+})
 
-
-const generateUniqueCode = (data) => {
-    const { subCategory, category, half, year, itemCode, size } = data;
-  
-    // Base Code Format
-    let code = `${subCategory[0]}${category[0]}${half}${year}${itemCode}${size}`;
-    
-    // Append 6-character alphanumeric code
-    const randomCode = crypto.randomBytes(3).toString("hex").toUpperCase();
-    
-    return code + randomCode;
-  };
-
-
-  app.post("/upload", async (req, res) => {
-    const records = req.body;
-  
-    if (!Array.isArray(records) || records.length === 0) {
-      return res.status(400).json({ message: "Invalid data format" });
-    }
-  
+app.post("/data", async (req, res) => {
     try {
-      // Process records in batches
-      const batchSize = 10000;
-      let allData = [];
+      let { branchName,category, subCategory, half,halfValue, year, itemCode, size, quantity } = req.body;
+      let uniqueCode = generateUniqueCode(branchName,subCategory, category, half,halfValue, year, itemCode, size, quantity);
   
-      for (let i = 0; i < records.length; i += batchSize) {
-        const batch = records.slice(i, i + batchSize).map((record) => ({
-          ...record,
-          uniqueCode: generateUniqueCode(record),
-        }));
-        allData.push(...batch);
-      }
+      let newData = new Data({ branchName,category, subCategory, half,halfValue, year, itemCode, size, quantity, uniqueCode });
+      await newData.save();
   
-      // Bulk insert into MongoDB
-      await DataModel.insertMany(allData);
-  
-      res.status(201).json({ message: "Data uploaded successfully" });
+      res.status(201).json({ message: "Data saved successfully!", uniqueCode });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error processing data" });
+      res.status(500).json({ error: "Error saving data" });
     }
   });
 
- 
-  app.listen(3000, () => {
-    console.log("Server running on http://localhost:3000");
-  });
-  
-  
-  
+
+
+
+app.listen(3000, console.log("server starting at 3000"))

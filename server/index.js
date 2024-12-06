@@ -1,40 +1,45 @@
-
 const express = require("express");
 const cors = require("cors");
-require('./db/connect')
-const generateUniqueCode = require('./utils/codeGenerator')
-
-const User = require('./models/User')
-const Data = require('./models/formData')
+require('./db/connect');
+const generateUniqueCode = require('./utils/codeGenerator');
+const { saveDataToDatabase } = require('./models/formData'); // Ensure to import save function
 
 const app = express();
-
 
 app.use(express.json());
 app.use(cors());
 
+// POST endpoint to upload form data and save generated codes
+app.post('/api/upload', async (req, res) => {
+  const { branchName,category, subcategory, half, year, itemCode, size, quantity } = req.body;
 
-app.post('/', async(req,res)=>{
-  let user = new User (req.body);
-  let result = await user.save();
-  res.send(result);
-})
+  let codes = [];
+  // Generate the specified number of unique codes
+  for (let i = 0; i < quantity; i++) {
+    const uniqueCode = generateUniqueCode(branchName, subcategory, category, half, year, itemCode, size);
+    codes.push(uniqueCode);
+  }
 
-app.post("/data", async (req, res) => {
-    try {
-      let { branchName,category, subCategory, half,halfValue, year, itemCode, size, quantity } = req.body;
-      let uniqueCode = generateUniqueCode(branchName,subCategory, category, half,halfValue, year, itemCode, size, quantity);
-  
-      let newData = new Data({ branchName,category, subCategory, half,halfValue, year, itemCode, size, quantity, uniqueCode });
-      await newData.save();
-  
-      res.status(201).json({ message: "Data saved successfully!", uniqueCode });
-    } catch (error) {
-      res.status(500).json({ error: "Error saving data" });
-    }
-  });
+  // Save the data to MongoDB (including the codes)
+  try {
+    const newData = {
+      branchName,
+      category,
+      subcategory,
+      half,
+      year,
+      itemCode,
+      size,
+      quantity,
+      codes
+    };
 
+    await saveDataToDatabase(newData); // Save to MongoDB
+    res.status(201).json({ message: "Data saved successfully!", codes });
+  } catch (error) {
+    console.error("Error saving data:", error);
+    res.status(500).json({ error: "Error saving data" });
+  }
+});
 
-
-
-app.listen(3000, console.log("server starting at 3000"))
+app.listen(3000, () => console.log("Server running on port 3000"));

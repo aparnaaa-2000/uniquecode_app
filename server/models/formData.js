@@ -10,15 +10,11 @@ const codeSchema = new mongoose.Schema({
   itemCode: { type: String, required: true },
   size: { type: Number, required: true },
   quantity: { type: Number, required: true },
-  codes: { type: [String], required: true , unique: true } // Array of generated codes
+  codes: { type: [String], required: true } // Array of generated codes
 });
 
+// Create the Mongoose model
 const CodeData = mongoose.model('CodeData', codeSchema);
 
-// Function to save data to MongoDB
-async function saveDataToDatabase(data) {
-  const newData = new CodeData(data);
-  await newData.save(); // Save to the database
-}
-
-module.exports = { saveDataToDatabase };
+// Export the model
+module.exports = CodeData;

@@ -10,7 +10,7 @@ const codeSchema = new mongoose.Schema({
   itemCode: { type: String, required: true },
   size: { type: Number, required: true },
   quantity: { type: Number, required: true },
-  codes: { type: [String], required: true }, // Array of generated codes
+  codes: { type: [String], required: true }, // Array of calculated final codes
 });
 
 // Create and export the Mongoose model

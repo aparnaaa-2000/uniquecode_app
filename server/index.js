@@ -85,15 +85,59 @@ app.post('/api/upload', async (req, res) => {
 
 
 // Route: GET /api/fetch-data
+// Route: GET /api/fetch-data
 app.get('/api/fetch-data', async (req, res) => {
   try {
-    const data = await CodeData.find(); // Fetch all records from the CodeData collection
-    res.status(200).json(data); // Send the fetched data as JSON response
+    const page = parseInt(req.query.page) || 1; // Current page
+    const limit = parseInt(req.query.limit) || 10; // Items per page
+    const skip = (page - 1) * limit; // Skip items for pagination
+
+    // Fetch total count for pagination metadata
+    const total = await CodeData.countDocuments();
+
+    // Fetch paginated data
+    const data = await CodeData.find().skip(skip).limit(limit);
+
+    // Group data by unique product details
+    const groupedData = data.reduce((acc, item) => {
+      const key = `${item.branchName}-${item.category}-${item.subCategory}-${item.half}-${item.year}-${item.itemCode}-${item.size}`;
+
+      // Ensure all fields are included in the grouping
+      if (!acc[key]) {
+        acc[key] = {
+          branchName: item.branchName,
+          category: item.category,
+          subCategory: item.subCategory,
+          half: item.half,
+          year: item.year,
+          itemCode: item.itemCode,
+          size: item.size,
+          quantity: item.quantity,
+          codes: [...item.codes], // Initialize codes array
+        };
+      } else {
+        acc[key].codes.push(...item.codes); // Append new codes to the existing group
+      }
+
+      return acc;
+    }, {});
+
+    // Convert grouped object to an array
+    const groupedArray = Object.values(groupedData);
+
+    // Send response with pagination metadata
+    res.status(200).json({
+      page,
+      total,
+      totalPages: Math.ceil(total / limit),
+      data: groupedArray,
+    });
   } catch (error) {
     console.error('Error fetching data:', error);
     res.status(500).json({ error: 'Failed to fetch data' });
   }
 });
+
 
 // Start the server
 const PORT = 3000;

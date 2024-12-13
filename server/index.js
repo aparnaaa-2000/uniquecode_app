@@ -137,6 +137,45 @@ app.get('/api/fetch-data', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch data' });
   }
 });
+app.post('/api/upload-csv', upload.single('file'), async (req, res) => {
+  try {
+      if (!req.file) {
+          return res.status(400).json({ error: 'No file uploaded.' });
+      }
+
+      const fileExt = path.extname(req.file.originalname).toLowerCase();
+      if (fileExt !== '.csv') {
+          return res.status(400).json({ error: 'Invalid file type. Please upload a CSV file.' });
+      }
+
+      const filePath = req.file.path;
+      const rows = [];
+      
+      // Parse CSV
+      await new Promise((resolve, reject) => {
+          fs.createReadStream(filePath)
+              .pipe(csv())
+              .on('data', (row) => {
+                  rows.push(row);
+              })
+              .on('end', resolve)
+              .on('error', reject);
+      });
+
+      if (rows.length === 0) {
+          return res.status(400).json({ error: 'No valid rows found in the CSV file.' });
+      }
+
+      // Process rows (add your logic here)
+
+      fs.unlinkSync(filePath); // Clean up uploaded file
+      res.status(200).json({ message: 'File processed successfully', rowsProcessed: rows.length });
+  } catch (error) {
+      console.error('Error processing file:', error.message);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 
 
 // Start the server
